@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ケースワーカーのためのMIトレーニングゲーム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #e6ebee;
+            --chat-bg: #ffffff;
+            --client-bubble: #f0f0f0;
+            --player-bubble: #8de055;
+            --feedback-bubble: #fffbe6;
+            --feedback-border: #ffe58f;
+            --system-bubble: #e6f7ff;
+            --system-border: #91d5ff;
+            --button-bg: #007bff;
+            --button-hover-bg: #0056b3;
+            --secondary-button-bg: #6c757d;
+            --secondary-button-hover-bg: #5a6268;
+            --text-dark: #333;
+            --text-light: #ffffff;
+            --border-radius: 12px;
+            --accordion-bg: #f8f9fa;
+            --accordion-border: #dee2e6;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-dark);
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 420px;
+            height: 90vh;
+            max-height: 800px;
+            background-color: var(--chat-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #scenario-selector {
+            padding: 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        #scenario-selector h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #scenario-selector p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .scenario-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: linear-gradient(145deg, #4da1ff, #007bff);
+            color: var(--text-light);
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .scenario-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+        
+        .study-button {
+            background: linear-gradient(145deg, #868e96, #495057);
+        }
+
+        .study-button:hover {
+             box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        #game-screen, #study-mode-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* 学習モードのスタイル */
+        #study-mode-screen .header {
+            flex-shrink: 0;
+        }
+        #study-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .accordion-item {
+            margin-bottom: 15px;
+            border: 1px solid var(--accordion-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background-color: var(--accordion-bg);
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accordion-header::after {
+            content: '+';
+            font-size: 24px;
+            font-weight: 300;
+            transition: transform 0.3s ease;
+        }
+        .accordion-item.active .accordion-header::after {
+            transform: rotate(45deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            background-color: #fff;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .accordion-content .content-inner {
+             padding: 15px;
+        }
+        .accordion-content ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        .accordion-content li {
+            margin-bottom: 8px;
+        }
+         .accordion-content strong {
+            color: var(--button-bg);
+         }
+
+
+        .header {
+            padding: 10px 20px;
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h2 {
+            font-size: 16px;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .back-button {
+            padding: 5px 10px;
+            background-color: var(--secondary-button-bg);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            background-color: var(--secondary-button-hover-bg);
+        }
+
+        #score-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--button-bg);
+        }
+
+        #chat-log {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            max-width: 85%;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message.client {
+            background-color: var(--client-bubble);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message.player {
+            background-color: var(--player-bubble);
+            color: var(--text-dark);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.feedback {
+            background-color: var(--feedback-bubble);
+            border: 1px solid var(--feedback-border);
+            align-self: center;
+            width: 90%;
+            font-size: 13px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+        .feedback .mi-skill {
+            font-weight: bold;
+            color: #d46b08;
+        }
+        .feedback .score {
+            font-weight: bold;
+        }
+        .feedback .score.plus { color: #389e0d; }
+        .feedback .score.minus { color: #cf1322; }
+
+        .message.system {
+            background-color: var(--system-bubble);
+            border: 1px solid var(--system-border);
+            align-self: center;
+            width: 90%;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        #options-container {
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background-color: #f7f7f7;
+            flex-shrink: 0;
+        }
+
+        .option-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            background-color: var(--chat-bg);
+            color: var(--button-bg);
+            border: 1px solid var(--button-bg);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .option-button:last-child {
+            margin-bottom: 0;
+        }
+
+        .option-button:hover:not(:disabled) {
+            background-color: var(--button-bg);
+            color: var(--text-light);
+        }
+
+        .option-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- シナリオ選択画面 -->
+        <div id="scenario-selector">
+            <div>
+                <h1>ケースワーカーのための</h1>
+                <h1>MIトレーニング</h1>
+                <p>動機付け面接のスキルを学びましょう。</p>
+            </div>
+            <div>
+                <button class="scenario-button" onclick="showStudyMode()">基本を学ぶ</button>
+                <button class="scenario-button" onclick="showScenarioList()">シナリオを開始</button>
+            </div>
+        </div>
+
+        <div id="scenario-list" class="hidden">
+             <div class="header">
+                <button class="back-button" onclick="showMainMenu()">戻る</button>
+                <h2>シナリオ選択</h2>
+                <span></span>
+            </div>
+            <div id="scenario-list-content" style="padding: 20px; overflow-y: auto;">
+                <button class="scenario-button" onclick="startGame('jobSeeking')">シナリオ1: 就労への不安</button>
+                <button class="scenario-button" onclick="startGame('finance')">シナリオ2: 金銭管理の悩み</button>
+                <button class="scenario-button" onclick="startGame('health')">シナリオ3: 健康問題（飲酒）</button>
+                <button class="scenario-button" onclick="startGame('isolation')">シナリオ4: 社会的孤立</button>
+                <button class="scenario-button" onclick="startGame('lowMotivation')">シナリオ5: 稼働年齢層（就労意欲）</button>
+            </div>
+        </div>
+
+        <!-- 学習モード画面 -->
+        <div id="study-mode-screen" class="hidden">
+            <div class="header">
+                <button class="back-button" onclick="showMainMenu()">戻る</button>
+                <h2>MIの基本知識</h2>
+                <span></span>
+            </div>
+            <div id="study-content">
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">関わり方の基本姿勢「PACE」</div>
+                        <div class="accordion-content">
+                            <div class="content-inner">
+                                PACEは、動機付け面接の根底にある「精神」や「あり方」を示す4つの要素の頭文字です。スキルを使う以前の、相談者と向き合う基本姿勢となります。<br><br>
+                                <ul>
+                                    <li><strong>Partnership (協働):</strong> 支援者は「専門家」、相談者は「教えてもらう人」という関係ではなく、対等なパートナーとして、共に問題に取り組みます。</li>
+                                    <li><strong>Acceptance (受容):</strong> 相手の価値観や選択を、無条件に尊重します。相手が持つ強さを信じ、共感的に関わります。</li>
+                                    <li><strong>Compassion (思いやり):</strong> 相手の幸福と福祉を最優先に考え、相手のために行動します。</li>
+                                    <li><strong>Evocation (喚起):</strong> 変化への動機や答えは、本人の中にすでにあると考えます。支援者の役割は、それを引き出すことです。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header">コミュニケーションスキル「OARS」</div>
+                        <div class="accordion-content">
+                            <div class="content-inner">
+                                OARSは、動機付け面接で中心的に使われる4つの基本的なコミュニケーションスキルの頭文字です。<br><br>
+                                <ul>
+                                    <li><strong>Open questions (開かれた質問):</strong> 「はい/いいえ」で終わらない質問を投げかけ、相手が自由に話せる空間を作ります。「...について、どう思いますか？」</li>
+                                    <li><strong>Affirming (是認):</strong> 相手の長所、強み、努力、肯定的な側面を見つけて、言葉にして伝えます。相手の自信と自己効力感を高めます。「大変な中でも、よく考えていますね。」</li>
+                                    <li><strong>Reflecting (聞き返し):</strong> 相手が話したことを、別の言葉で言い換えたり、感情を汲み取って返します。相手は「理解してもらえた」と感じ、さらに深く話せるようになります。「...ということなのですね。」</li>
+                                    <li><strong>Summarizing (要約):</strong> 会話の内容をまとめ、相手に確認します。会話の方向性を確認したり、相手が話した「変わりたい」という言葉（チェンジトーク）を強調する効果があります。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header">MIの４つのプロセス</div>
+                        <div class="accordion-content">
+                            <div class="content-inner">
+                                動機付け面接は、大きく4つのプロセス（段階）を経て進んでいきます。前のプロセスが、次のプロセスの土台となります。<br><br>
+                                <ol>
+                                    <li><strong>関わる (Engaging):</strong> 支援者と相談者が、お互いに協力できるような信頼関係を築く段階です。安心できる雰囲気を作ることが最も重要です。</li>
+                                    <li><strong>焦点化する (Focusing):</strong> 会話の中から、取り組むべき特定のテーマ（変化の目標）を見つけ出し、明確にしていく段階です。「今日は、何について話しましょうか？」</li>
+                                    <li><strong>引き出す (Evoking):</strong> 変化に向けての、相談者自身の動機を引き出す段階です。MIの心臓部とも言える最も重要なプロセスです。相談者の口から「チェンジトーク」が語られるよう促します。</li>
+                                    <li><strong>計画する (Planning):</strong> 変化への動機が十分に高まったら、具体的な行動計画を一緒に立てる段階です。いつ、どこで、何を、どのように行うかを話し合います。</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item">
+                        <div class="accordion-header">チェンジトークの種類</div>
+                        <div class="accordion-content">
+                            <div class="content-inner">
+                                チェンジトークとは、現状を変えたいという方向へ向かう、相談者自身の発言のことです。これに気づき、引き出すことがMIの鍵となります。チェンジトークは「準備言語」と「実行言語」に分けられます。<br><br>
+                                <strong>準備言語 (DARN)</strong> - 変化の準備をしている段階の言葉
+                                <ul>
+                                    <li><strong>Desire (願望):</strong> 「もっと健康になりたい」「〜したい」</li>
+                                    <li><strong>Ability (能力):</strong> 「やろうと思えば、〜できる」「〜できるかもしれない」</li>
+                                    <li><strong>Reason (理由):</strong> 「タバコをやめれば、お金が貯まるから」「〜のため」</li>
+                                    <li><strong>Need (必要性):</strong> 「〜しないといけない」「〜する必要がある」</li>
+                                </ul>
+                                <strong>実行言語 (CAT)</strong> - 変化を実行に移そうとしている段階の言葉
+                                <ul>
+                                    <li><strong>Commitment (決意):</strong> 「明日から、〜します」</li>
+                                    <li><strong>Activation (始動):</strong> 「〜する準備はできています」「〜に取り掛かろうと思う」</li>
+                                    <li><strong>Taking Steps (実行):</strong> 「昨日、実際に〜をやってみました」</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="hidden">
+            <div class="header">
+                 <button class="back-button" onclick="showScenarioList()">戻る</button>
+                <h2 id="scenario-title"></h2>
+                <div id="score-display">スコア: 0</div>
+            </div>
+            <div id="chat-log"></div>
+            <div id="options-container"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const scenarioSelector = document.getElementById('scenario-selector');
+        const scenarioList = document.getElementById('scenario-list');
+        const gameScreen = document.getElementById('game-screen');
+        const studyModeScreen = document.getElementById('study-mode-screen');
+        const chatLog = document.getElementById('chat-log');
+        const optionsContainer = document.getElementById('options-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const scenarioTitle = document.getElementById('scenario-title');
+
+        // ゲームの状態管理
+        let score = 0;
+        let currentScenario = null;
+        let currentSceneKey = null;
+
+        // シナリオデータ
+        const scenarios = {
+            jobSeeking: {
+                title: "シナリオ1: 就労への不安",
+                start: "start",
+                scenes: {
+                    "start": {
+                        message: "ハローワークには行ってるんですけど、なかなか良い仕事が見つからなくて…。もう、なんだかどうでもよくなっちゃいますよ。",
+                        options: [
+                            { text: "良い仕事が見つからず、少し気持ちが疲れてしまっているんですね。", mi: "R", score: 10, feedback: "【聞き返し】相手の言葉を繰り返して理解を示し、感情を認める良い応答です。相手は「分かってくれた」と感じ、さらに話しやすくなります。", next: "job_scene2_good" },
+                            { text: "「良い仕事」というと、具体的にどんなお仕事のことですか？", mi: "O", score: 5, feedback: "【開かれた質問】相手の考えを深掘りする良い質問です。ただし、相手が疲れている時は質問が負担になる可能性もあります。", next: "job_scene2_neutral" },
+                            { text: "もっと真剣に探さないとダメですよ。選り好みしすぎじゃないですか？", mi: "Adv", score: -10, feedback: "【間違い指摘反射】一方的な助言や批判は、相手の抵抗感を生みます。MIでは最も避けるべき対応の一つです。", next: "job_scene2_bad" }
+                        ]
+                    },
+                    "job_scene2_good": {
+                        message: "そうなんです…。分かってくれますか。自分でも頑張らないとって思うんですけど、心が折れそうで。",
+                        options: [
+                            { text: "頑張りたい気持ちと、心が折れそうな気持ちの両方があるんですね。", mi: "R", score: 10, feedback: "【両面性のある聞き返し】相反する気持ちを両方とも認めることで、相手は安心して葛藤を話せます。変化への動機を探る上で非常に効果的です。", next: "job_scene3_good" },
+                            { text: "これまでも、大変な中で色々と頑張ってこられたんですね。", mi: "A", score: 10, feedback: "【是認】相手のこれまでの努力を認め、尊重する姿勢を示すことで、自己効力感（やればできるという感覚）を高めることができます。", next: "job_scene3_good" },
+                            { text: "ここで諦めたら、ずっとこのままですよ！", mi: "Adv", score: -10, feedback: "【間違い指摘反射】相手を追い詰めるような発言は逆効果です。本人が自ら「変わりたい」と思えるような言葉を引き出すのがMIの目的です。", next: "job_scene2_bad" }
+                        ]
+                    },
+                    "job_scene2_neutral": {
+                        message: "うーん…まあ、給料が良くて、安定してて…。そんな仕事、簡単にはないですよね。",
+                        options: [
+                             { text: "安定した生活を望んでいらっしゃるんですね。", mi: "R", score: 10, feedback: "【聞き返し】相手の言葉の裏にある価値観（安定したい）を汲み取って伝える、一歩進んだ聞き返しです。素晴らしい応答です。", next: "job_scene3_good" },
+                             { text: "そうですね、確かに難しいかもしれません。", mi: "Con", score: -5, feedback: "【同調】話が終わってしまい、変化に向けた会話が停滞する可能性があります。MIでは会話を広げ、深めることを目指します。", next: "job_scene2_bad" }
+                        ]
+                    },
+                    "job_scene2_bad": {
+                        message: "…そうですよね。すみません、俺が甘いんですよね。",
+                        options: [
+                            { text: "いえ、そんな風に自分を責めないでください。そう感じてしまうほど、今お辛い状況なんですね。", mi: "R", score: 10, feedback: "【聞き返し】相手の自己否定を否定せず、その背景にある感情に寄り添うことで、再び信頼関係を築くことができます。", next: "job_scene3_good" },
+                            { text: "そうですよ。もっと現実を見ないと。", mi: "Adv", score: -10, feedback: "【間違い指摘反射】相手の自己否定に同調し、さらに追い詰めるのは最悪の対応です。相手は心を閉ざしてしまいます。", next: "end_bad" }
+                        ]
+                    },
+                     "job_scene3_good": {
+                        message: "はい…。もし、ちゃんと仕事が決まったら、少しは自分のことを認められるのかなって思う時もあって…。",
+                        options: [
+                             { text: "（ここまでを要約して）良い仕事が見つからず気持ちが疲れているけれど、安定した生活のために頑張りたい気持ちと、仕事が決まれば自分を認められるかもしれないという希望の両方をお持ちなんですね。", mi: "S", score: 15, feedback: "【要約】会話をまとめ、相手が話した変化への動機（チェンジトーク）を花束のように渡す、MIの重要なスキルです。本人の変化への気づきを促します。", next: "end_good" }
+                        ]
+                    },
+                    "end_good": { systemMessage: "素晴らしい対応でした！相手の中から変化に向けた言葉（チェンジトーク）を引き出すことができました。この調子で、相手の自己決定を尊重し、伴走していきましょう。" },
+                    "end_bad": { systemMessage: "相手は心を閉ざしてしまいました。MIでは、まず安心できる関係を築くことが何よりも大切です。もう一度挑戦してみましょう。" }
+                }
+            },
+            finance: {
+                title: "シナリオ2: 金銭管理の悩み",
+                start: "start",
+                scenes: {
+                     "start": {
+                        message: "すみません、ケースワーカーさん…。今月もちょっと生活が厳しくて…。少し、前借りみたいなことって、できませんかね…？",
+                        options: [
+                            { text: "何にお金を使ったか、ちゃんと説明してください。", mi: "Con", score: -10, feedback: "【詰問】相手を問い詰めるような態度は、信頼関係を損ないます。相手は萎縮し、本当のことを話せなくなってしまいます。", next: "fin_scene2_bad" },
+                            { text: "今月も大変な状況なのですね。もしよければ、どんなことにお困りか一緒に考えさせていただけませんか？", mi: "O", score: 10, feedback: "【開かれた質問・協働】相手の状況に共感を示し、一方的に助けるのではなく「一緒に考える」という協働的な姿勢が、相手の主体性を尊重する上で非常に重要です。", next: "fin_scene2_good" },
+                            { text: "制度上、前借りはできないことになっています。", mi: "Info", score: -5, feedback: "【情報提供】事実は事実ですが、相手の気持ちを無視してルールだけを伝えると、冷たい印象を与え、相談の機会を失う可能性があります。", next: "fin_scene2_bad" }
+                        ]
+                    },
+                    "fin_scene2_good": {
+                        message: "いえ、その…自分の使い方が悪いのかなって…。友達付き合いとかで、つい見栄を張っちゃったりして…。",
+                        options: [
+                             { text: "お友達との関係も大切にされているんですね。", mi: "A", score: 10, feedback: "【是認】行動の背景にある価値観（友人関係を大切にしたい）を認めることで、相手は「自分のことを分かってくれる」と感じ、安心して話せるようになります。", next: "fin_scene3_good" },
+                             { text: "見栄を張るのはやめた方がいいですよ。", mi: "Adv", score: -10, feedback: "【間違い指摘反射】正論による助言は、相手の反発を招きます。「そんなことは分かっている」と、心を閉ざしてしまうかもしれません。", next: "fin_scene2_bad" }
+                        ]
+                    },
+                    "fin_scene2_bad": {
+                         message: "…そうですよね。すみません、もういいです。",
+                         options: [
+                              { text: "待ってください。あなたの力になりたいんです。お金のことで困ってしまう今の状況と、本当はどうなりたいか、という点を一緒に話しませんか？", mi: "Dis", score: 10, feedback: "【矛盾を広げる】現状と理想のギャップについて話すことを提案し、会話を立て直そうとする良い試みです。相手が変化を考えるきっかけになります。", next: "fin_scene2_good" },
+                              { text: "分かりました。何かあればまた。", mi: "End", score: -5, feedback: "【会話の終了】相手の言葉通りに会話を終えてしまうと、支援の機会を失ってしまいます。もう一歩踏み込むことが大切です。", next: "end_bad" }
+                         ]
+                    },
+                     "fin_scene3_good": {
+                         message: "はい…。でも、このままじゃダメだっていうのも分かってるんです。本当は、ちゃんとお金の管理ができるようになりたい。",
+                         options: [
+                             { text: "ちゃんとお金の管理ができるようになりたい、と思っていらっしゃるんですね。素晴らしい目標だと思います。そのために、まず何から始められそうか、一緒にアイデアを出し合ってみましょうか。", mi: "Sup", score: 15, feedback: "【自己効力感の支持】相手から出た変化への言葉を力強く肯定し、具体的な計画へ繋げようとする完璧な流れです。相手は「自分でもできるかもしれない」と感じるでしょう。", next: "end_good" }
+                         ]
+                    },
+                    "end_good": { systemMessage: "素晴らしい対応でした！相手の中から変化に向けた言葉（チェンジトーク）を引き出すことができました。この調子で、相手の自己決定を尊重し、伴走していきましょう。" },
+                    "end_bad": { systemMessage: "相手は心を閉ざしてしまいました。MIでは、まず安心できる関係を築くことが何よりも大切です。もう一度挑戦してみましょう。" }
+                }
+            },
+            health: {
+                title: "シナリオ3: 健康問題（飲酒）",
+                start: "start",
+                scenes: {
+                    "start": {
+                        message: "最近、夜なかなか眠れなくて、ついお酒を飲んじゃうんですよ。それが一番、手っ取り早く眠れる気がして。",
+                        options: [
+                            { text: "お酒を飲むと眠れる一方で、健康のことも少し気になっている、という感じでしょうか。", mi: "R", score: 15, feedback: "【両面性のある聞き返し】メリットとデメリットの両方に触れることで、相手は自分の状況を客観的に見つめ直しやすくなります。非常に高度で効果的なスキルです。", next: "hel_scene2_good" },
+                            { text: "眠れないのは辛いですよね。ご自身で眠るための工夫をされているんですね。", mi: "A", score: 10, feedback: "【是認】飲酒という行動そのものではなく、「眠ろう」というポジティブな意図を認めることで、相手は defensiveness にならずに話を進められます。", next: "hel_scene2_good" },
+                            { text: "そんな飲み方を続けていたら、体を壊しますよ！すぐやめるべきです。", mi: "Adv", score: -10, feedback: "【警告・間違い指摘反射】脅しや命令は、相手の自律性を奪い、反発心（心理的リアクタンス）を引き起こす典型的な例です。", next: "hel_scene2_bad" }
+                        ]
+                    },
+                     "hel_scene2_good": {
+                         message: "そうなんです。次の日の朝、体がだるい時もあって、このままでいいのかなって…。でも、お酒がないと眠れないし…。",
+                         options: [
+                             { text: "お酒に頼らずに眠れるようになったら、生活にどんな良いことがありそうだと思いますか？", mi: "O", score: 10, feedback: "【開かれた質問】変化した後の未来に目を向けさせる、動機付けを高めるための良い質問です。「チェンジトーク」を引き出しやすくなります。", next: "hel_scene3_good" },
+                             { text: "お酒の代わりに、睡眠薬を処方してもらいましょうか？", mi: "Sol", score: -5, feedback: "【解決策の提供】相手が考える前に解決策を提示するのは、MIのスタイルではありません。相手の中から解決策が生まれるのを手伝うのが役割です。", next: "hel_scene2_bad" }
+                         ]
+                    },
+                     "hel_scene2_bad": {
+                         message: "…分かってますよ。でも、それができたら苦労しないんです。",
+                         options: [
+                             { text: "失礼しました。私の言い方が悪かったですね。お酒をやめるのが難しいと感じる一方で、体のことを心配するお気持ちもある、ということでしょうか。", mi: "R", score: 10, feedback: "【謝罪と聞き返し】自分の間違いを認め、軌道修正しようとする誠実な態度です。両面性のある聞き返しで、再び会話の流れを作ろうとしています。", next: "hel_scene2_good" },
+                             { text: "言い訳はよくないですよ。", mi: "Adv", score: -10, feedback: "【批判】相手をさらに追い詰め、関係を悪化させてしまいます。", next: "end_bad" }
+                         ]
+                     },
+                     "hel_scene3_good": {
+                        message: "そうですね…朝スッキリ起きられたら、日中ももっと元気に活動できるかもしれないですね。少し、お酒の量を減らすことから考えてみようかな…。",
+                        options: [
+                             { text: "ご自身から「量を減らしてみよう」という言葉が聞けて、とても嬉しく思います。素晴らしい一歩ですね。もしよければ、その目標を達成するためのお手伝いをさせてください。", mi: "S", score: 15, feedback: "【是認と要約】相手の変化への決意（コミットメント言語）をしっかりと受け止め、肯定し、支援を申し出る完璧な締めくくりです。", next: "end_good" }
+                        ]
+                    },
+                    "end_good": { systemMessage: "素晴らしい対応でした！相手の中から変化に向けた言葉（チェンジトーク）を引き出すことができました。この調子で、相手の自己決定を尊重し、伴走していきましょう。" },
+                    "end_bad": { systemMessage: "相手は心を閉ざしてしまいました。MIでは、まず安心できる関係を築くことが何よりも大切です。もう一度挑戦してみましょう。" }
+                }
+            },
+            isolation: {
+                title: "シナリオ4: 社会的孤立",
+                start: "start",
+                scenes: {
+                    "start": {
+                        message: "毎日、特にやることもなくて…。話し相手もいないし、一日がすごく長く感じるんですよ。",
+                        options: [
+                            { text: "家に閉じこもってないで、地域の集まりにでも参加してみたらどうですか？", mi: "Adv", score: -10, feedback: "【間違い指摘反射】相手の状況を考えずに解決策を押し付けるのは逆効果です。「抵抗」を引き出してしまいます。", next: "iso_scene2_bad" },
+                            { text: "一日が長く感じられるほど、話し相手がおらず、孤独を感じていらっしゃるのですね。", mi: "R", score: 10, feedback: "【聞き返し】相手の感情を言葉にして返すことで、深い共感を示せます。相手は「この人は分かってくれる」と感じ、安心して話を続けることができます。", next: "iso_scene2_good" },
+                            { text: "趣味とか、何か好きなことはないんですか？", mi: "O", score: 5, feedback: "【開かれた質問】悪くはありませんが、相手が気分が落ち込んでいる場合、質問に答えること自体が負担になることがあります。まずは共感が大切です。", next: "iso_scene2_neutral" }
+                        ]
+                    },
+                    "iso_scene2_good": {
+                        message: "そうなんです…。このままじゃいけないって頭では分かっているんですけどね。何もやる気が起きなくて…。",
+                        options: [
+                            { text: "このままではいけない、という気持ちと、やる気が起きないという気持ちの間で、葛藤されているのですね。", mi: "R", score: 15, feedback: "【両面性のある聞き返し】アンビバレンス（両価性）を的確に捉えた、素晴らしい応答です。相手は自分の葛藤を整理しやすくなります。", next: "iso_scene3_good" },
+                            { text: "そういうお気持ちの中でも、こうして相談に来てくださったのは、大きな一歩ですよ。", mi: "A", score: 10, feedback: "【是認】相手の小さな努力や強みを見つけて認めることで、自己効力感を高め、変化への勇気を与えることができます。", next: "iso_scene3_good" },
+                            { text: "やる気がないなら、どうしようもないですね。", mi: "Con", score: -10, feedback: "【突き放し】相手の無力感を肯定してしまい、関係を断絶させる最悪の対応です。", next: "end_bad" }
+                        ]
+                    },
+                    "iso_scene2_neutral": {
+                        message: "うーん…昔は色々やっていたんですけどね。今はもう、何もかも面倒くさくって…。",
+                        options: [
+                            { text: "以前は活動的だったのに、今は面倒に感じてしまう。その変化には、何かきっかけがあったのでしょうか？", mi: "O", score: 5, feedback: "【開かれた質問】過去と現在の変化に着目し、その背景を探ろうとする良い質問です。", next: "iso_scene2_good" },
+                            { text: "面倒くさがらずに、何か始めてみましょうよ。", mi: "Adv", score: -10, feedback: "【間違い指摘反射】相手の「面倒くさい」という気持ちを否定し、行動を促しても、反発されるだけです。", next: "iso_scene2_bad" }
+                        ]
+                    },
+                    "iso_scene2_bad": {
+                        message: "…まあ、そう言われると思いました。でも、それが簡単にできれば、苦労はしないですよ。",
+                        options: [
+                            { text: "おっしゃる通りですね。簡単にできないからこそ、お困りなのですよね。失礼いたしました。", mi: "R", score: 10, feedback: "【抵抗に寄り添う】相手の抵抗に反論せず、その気持ちを認めることで、対立を避けて関係を再構築できます。", next: "iso_scene2_good" },
+                            { text: "できない理由を探すのはやめましょう。", mi: "Adv", score: -10, feedback: "【説教】相手と議論し、言い負かそうとするのはMIのスタイルではありません。", next: "end_bad" }
+                        ]
+                    },
+                    "iso_scene3_good": {
+                        message: "そう…ですね。もし、また誰かと気軽に話せるようになったら…少しは、毎日が楽しくなるのかもしれないです。",
+                        options: [
+                            { text: "（要約）話し相手がなく孤独を感じ、やる気も起きない状況だけれど、本当は誰かと話すことで毎日を少しでも楽しくしたい、というお気持ちがあるのですね。", mi: "S", score: 15, feedback: "【要約】相手の口から出た「変わりたい」という気持ち（チェンジトーク）をまとめて返すことで、変化への動機を強めることができます。完璧な流れです。", next: "end_good" }
+                        ]
+                    },
+                    "end_good": { systemMessage: "素晴らしい対応でした！相手の中から変化に向けた言葉（チェンジトーク）を引き出すことができました。この調子で、相手の自己決定を尊重し、伴走していきましょう。" },
+                    "end_bad": { systemMessage: "相手は心を閉ざしてしまいました。MIでは、まず安心できる関係を築くことが何よりも大切です。もう一度挑戦してみましょう。" }
+                }
+            },
+            lowMotivation: {
+                title: "シナリオ5: 稼働年齢層（就労意欲）",
+                start: "start",
+                scenes: {
+                    "start": {
+                        message: "働くのって、正直面倒くさいんですよね。今の生活でも、別に困ってるわけじゃないですし。",
+                        options: [
+                            { text: "今の生活で十分だと感じていて、働く必要性を特に感じていないのですね。", mi: "R", score: 10, feedback: "【聞き返し】相手の考えをジャッジせず、そのまま返すことで、相手は安心して本音を話しやすくなります。まずは相手の世界を理解しようとする姿勢が重要です。", next: "lm_scene2_good" },
+                            { text: "将来のことを考えたら、若いうちから働いた方が絶対に良いですよ。", mi: "Adv", score: -10, feedback: "【間違い指摘反射】正論で説得しようとすると、相手は反発心を抱きます。「あなたに何がわかるんだ」と思わせてしまう典型的な例です。", next: "lm_scene2_bad" },
+                            { text: "もし働くとしたら、どんな仕事に興味がありますか？", mi: "O", score: 5, feedback: "【開かれた質問】意欲が低い相手に未来の質問をしても、まだ考える準備ができておらず、「別にないです」と会話が終わりがちです。まずは現状の気持ちを受け止めることが先決です。", next: "lm_scene2_neutral" }
+                        ]
+                    },
+                    "lm_scene2_good": {
+                        message: "ええ、まあ…。でも、時々ふと思うんです。同級生とかはみんな働いて、結婚したりしてるし…このままでいいのかなって。",
+                        options: [
+                            { text: "周りの人たちの姿を見て、自分の今の生き方に疑問を感じる時があるのですね。", mi: "R", score: 15, feedback: "【複雑な聞き返し】相手の言葉の裏にある「焦り」や「不安」といった感情を汲み取って返す、非常に効果的な応答です。相手との信頼関係が深まります。", next: "lm_scene3_good" },
+                            { text: "周りと比べて焦る必要はないですよ。", mi: "Rea", score: -5, feedback: "【励まし・安心させる】安易な励ましは、相手の不安な気持ちを軽視していると受け取られることがあります。「この人には分かってもらえない」と思わせてしまう可能性があります。", next: "lm_scene2_bad" }
+                        ]
+                    },
+                    "lm_scene2_neutral": {
+                        message: "いや、特にないです。考えたこともないですね。",
+                        options: [
+                            { text: "そうですか。では、働くことについて、今は考えたくないという感じでしょうか。", mi: "R", score: 5, feedback: "【聞き返し】会話が途切れてしまいそうなところを、相手の気持ちを推し量って言葉にすることで、なんとか繋ぎ止めています。良い軌道修正です。", next: "lm_scene2_good" },
+                            { text: "何か一つでも、興味を持てることを見つけましょうよ。", mi: "Adv", score: -10, feedback: "【間違い指摘反射】意欲がない相手を無理やり引っ張ろうとしています。相手のペースを尊重することが大切です。", next: "lm_scene2_bad" }
+                        ]
+                    },
+                    "lm_scene2_bad": {
+                        message: "…やっぱり、そうやってお説教されるんですね。もういいです。",
+                        options: [
+                            { text: "すみません、説教するつもりはなかったんです。ただ、あなたの将来が心配で…。もしよければ、もう少しあなたの気持ちを聞かせてくれませんか？", mi: "Apology", score: 5, feedback: "【謝罪・関係修復】自分の言動を省み、関係を修復しようとする姿勢は大切です。ここから信頼を取り戻せるかは、今後の関わり方次第です。", next: "lm_scene2_good" },
+                            { text: "お説教じゃなくて、事実ですよ。", mi: "Argue", score: -10, feedback: "【議論】相手と対立し、言い負かそうとしています。これでは、相手が心を開くことはありません。", next: "end_bad" }
+                        ]
+                    },
+                    "lm_scene3_good": {
+                        message: "はい…。もし自分が普通に働いていたら、もっと自信を持てたのかなとか、親を安心させられたのかなとか…。",
+                        options: [
+                            { text: "働くことで、自分に自信が持てたり、ご両親を安心させられたり、といった未来を想像することがあるのですね。", mi: "R", score: 10, feedback: "【聞き返し】相手が語った「働くことのメリット（チェンジトーク）」を丁寧に拾い上げて返すことで、その気持ちを本人の中で増幅させる効果があります。", next: "lm_scene4_good" },
+                            { text: "その気持ちがあれば、絶対に働けますよ！", mi: "Cheer", score: 0, feedback: "【応援】気持ちはありがたいですが、相手にとってはプレッシャーになることも。「じゃあどうすれば？」と、具体的な行動に移せず、かえって無力感を感じさせてしまう可能性があります。", next: "lm_scene4_good" }
+                        ]
+                    },
+                     "lm_scene4_good": {
+                        message: "…ええ。まあ、今からじゃもう遅いかもしれないですけどね。",
+                        options: [
+                             { text: "（要約）今の生活に大きな不満はないけれど、周りと比べてこのままでいいのかという不安があり、もし働いていれば自信が持てたかもしれない、という気持ちをお持ちなのですね。一方で、今から始めるには遅いかもしれない、というためらいもある。", mi: "S", score: 15, feedback: "【要約・両面性の提示】これまでの会話全体をまとめ、変化への気持ちと、それに対するためらいの両方を提示する完璧な要約です。相手は自分の状況を客観的に見つめ、次のステップを考える準備ができます。", next: "end_good" }
+                        ]
+                    },
+                    "end_good": { systemMessage: "素晴らしい対応でした！相手の中から変化に向けた言葉（チェンジトーク）を引き出すことができました。この調子で、相手の自己決定を尊重し、伴走していきましょう。" },
+                    "end_bad": { systemMessage: "相手は心を閉ざしてしまいました。MIでは、まず安心できる関係を築くことが何よりも大切です。もう一度挑戦してみましょう。" }
+                }
+            }
+        };
+        
+        // --- 画面切り替え ---
+        function showMainMenu() {
+            scenarioSelector.classList.remove('hidden');
+            scenarioList.classList.add('hidden');
+            studyModeScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+        }
+
+        function showScenarioList() {
+            scenarioSelector.classList.add('hidden');
+            scenarioList.classList.remove('hidden');
+            gameScreen.classList.add('hidden'); // ゲーム画面を非表示にする
+
+            // ゲーム画面の内容をリセットしてバグを防ぐ
+            chatLog.innerHTML = '';
+            optionsContainer.innerHTML = '';
+        }
+
+        function showStudyMode() {
+            scenarioSelector.classList.add('hidden');
+            studyModeScreen.classList.remove('hidden');
+        }
+
+
+        // ゲーム開始処理
+        function startGame(scenarioKey) {
+            currentScenario = scenarios[scenarioKey];
+            currentSceneKey = currentScenario.start;
+            score = 0;
+            
+            scenarioList.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            chatLog.innerHTML = '';
+            updateScore(0);
+            scenarioTitle.textContent = currentScenario.title;
+
+            displayScene(currentSceneKey);
+        }
+
+        // シーン表示処理
+        function displayScene(sceneKey) {
+            const scene = currentScenario.scenes[sceneKey];
+            optionsContainer.innerHTML = '';
+
+            if (scene.message) {
+                // クライアントのメッセージを表示
+                addMessageToLog(scene.message, 'client');
+            }
+            
+            if (scene.systemMessage) {
+                // システムメッセージ（結果）を表示
+                addMessageToLog(scene.systemMessage, 'system');
+                // やり直しボタンを表示
+                const restartButton = createOptionButton({ text: "シナリオ選択に戻る", next: "restart" });
+                optionsContainer.appendChild(restartButton);
+                return;
+            }
+
+            // 選択肢ボタンを生成
+            scene.options.forEach(option => {
+                const button = createOptionButton(option);
+                optionsContainer.appendChild(button);
+            });
+        }
+        
+        // 選択肢ボタン作成ヘルパー
+        function createOptionButton(option) {
+            const button = document.createElement('button');
+            button.className = 'option-button';
+            button.textContent = option.text;
+            button.onclick = () => selectOption(option);
+            return button;
+        }
+
+        // 選択肢選択時の処理
+        function selectOption(option) {
+            if (option.next === 'restart') {
+                gameScreen.classList.add('hidden');
+                showScenarioList();
+                return;
+            }
+
+            // プレイヤーの選択を表示
+            addMessageToLog(option.text, 'player');
+
+            // ボタンを無効化
+            const buttons = optionsContainer.querySelectorAll('.option-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // スコアとフィードバックを遅れて表示
+            setTimeout(() => {
+                if(option.score !== undefined) {
+                    updateScore(option.score);
+                    const scoreText = option.score > 0 ? `+${option.score}` : `${option.score}`;
+                    const scoreClass = option.score > 0 ? 'plus' : 'minus';
+                    const feedbackHTML = `<div class='mi-skill'>${option.feedback}</div><div class='score ${scoreClass}'>スコア: ${scoreText}</div>`;
+                    addMessageToLog(feedbackHTML, 'feedback');
+                }
+                
+                // 次のシーンへ
+                currentSceneKey = option.next;
+                if (currentSceneKey) {
+                     setTimeout(() => displayScene(currentSceneKey), 1000);
+                }
+            }, 500);
+        }
+
+        // メッセージをチャットログに追加
+        function addMessageToLog(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = content; // innerHTMLを使ってHTMLタグを解釈させる
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // スコア更新
+        function updateScore(points) {
+            if (points) {
+                score += points;
+            }
+            scoreDisplay.textContent = `スコア: ${score}`;
+        }
+
+        // Accordion functionality
+        const accordionItems = document.querySelectorAll('.accordion-item');
+        accordionItems.forEach(item => {
+            const header = item.querySelector('.accordion-header');
+            const content = item.querySelector('.accordion-content');
+            header.addEventListener('click', () => {
+                const isActive = item.classList.contains('active');
+                
+                // Close all items
+                accordionItems.forEach(i => {
+                    i.classList.remove('active');
+                    i.querySelector('.accordion-content').style.maxHeight = null;
+                });
+
+                // Open the clicked one if it wasn't active
+                if (!isActive) {
+                    item.classList.add('active');
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
+
+
